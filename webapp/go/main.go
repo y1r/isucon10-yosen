@@ -538,22 +538,40 @@ func searchChairs(c echo.Context) error {
 
 	query := fmt.Sprintf(
 		`
-			SELECT
-				chair.*,
-				S.chair_count
-			FROM chair
-			INNER JOIN (
+			(
 				SELECT
-					COUNT(*) AS chair_count
+					chair.*,
+					S.chair_count
 				FROM chair
+				INNER JOIN (
+					SELECT
+						COUNT(*) AS chair_count
+					FROM chair
+					WHERE
+						%s
+				) AS S
+				LIMIT 1
+			)
+			UNION
+			(
+				SELECT
+					chair.*,
+					S.chair_count
+				FROM chair
+				INNER JOIN (
+					SELECT
+						COUNT(*) AS chair_count
+					FROM chair
+					WHERE
+						%s
+				) AS S
 				WHERE
 					%s
-			) AS S
-			WHERE
-				%s
-			ORDER BY popularity DESC, id ASC
-			LIMIT ? OFFSET ?
+				ORDER BY popularity DESC, id ASC
+				LIMIT ? OFFSET ?
+			)
 		`,
+		searchCondition,
 		searchCondition,
 		searchCondition,
 	)
@@ -561,6 +579,7 @@ func searchChairs(c echo.Context) error {
 	var res ChairSearchResponse
 
 	chairs := []ChairWithCount{}
+	params = append(params, params...)
 	params = append(params, params...)
 	params = append(params, perPage, page*perPage)
 	err = db.Select(&chairs, query, params...)
@@ -572,10 +591,11 @@ func searchChairs(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	for _, chair := range chairs {
+	res.Count = chairs[0].ChairCount
+
+	for _, chair := range chairs[1:] {
 		res.Chairs = append(res.Chairs, chair.Chair)
 	}
-	res.Count = chairs[0].ChairCount
 
 	return c.JSON(http.StatusOK, res)
 }
@@ -834,21 +854,38 @@ func searchEstates(c echo.Context) error {
 
 	query := fmt.Sprintf(
 		`
-			SELECT
-				id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, S.estate_count
-			FROM estate2
-			INNER JOIN (
+			(
 				SELECT
-					COUNT(*) AS estate_count
+					id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, S.estate_count
 				FROM estate2
+				INNER JOIN (
+					SELECT
+						COUNT(*) AS estate_count
+					FROM estate2
+					WHERE
+						%s
+				) AS S
+				LIMIT 1
+			)
+			UNION
+			(
+				SELECT
+					id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, S.estate_count
+				FROM estate2
+				INNER JOIN (
+					SELECT
+						COUNT(*) AS estate_count
+					FROM estate2
+					WHERE
+						%s
+				) AS S
 				WHERE
 					%s
-			) AS S
-			WHERE
-				%s
-			ORDER BY popularity DESC, id ASC
-			LIMIT ? OFFSET ?
+				ORDER BY popularity DESC, id ASC
+				LIMIT ? OFFSET ?
+			)
 		`,
+		searchCondition,
 		searchCondition,
 		searchCondition,
 	)
@@ -856,6 +893,7 @@ func searchEstates(c echo.Context) error {
 	var res EstateSearchResponse
 
 	estates := []EstateWithCount{}
+	params = append(params, params...)
 	params = append(params, params...)
 	params = append(params, perPage, page*perPage)
 	err = db.Select(&estates, query, params...)
@@ -867,10 +905,11 @@ func searchEstates(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	for _, estate := range estates {
+	res.Count = estates[0].EstateCount
+
+	for _, estate := range estates[1:] {
 		res.Estates = append(res.Estates, estate.Estate)
 	}
-	res.Count = estates[0].EstateCount
 
 	return c.JSON(http.StatusOK, res)
 }
