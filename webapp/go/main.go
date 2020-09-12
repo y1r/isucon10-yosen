@@ -529,15 +529,35 @@ func searchChairs(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	searchQuery := "SELECT * FROM chair WHERE "
 	searchCondition := strings.Join(conditions, " AND ")
-	limitOffset := " ORDER BY popularity DESC, id ASC LIMIT ? OFFSET ?"
+
+	type ChairWithCount struct {
+		Chair
+		ChairCount int64 `db:"chair_count"`
+	}
+
+	query := fmt.Sprintf(
+		`
+			SELECT
+				*
+			FROM (
+				SELECT
+					*, COUNT(*) AS chair_count
+				FROM chair
+				WHERE
+					%s
+				ORDER BY popularity DESC, id ASC
+			) AS S
+			LIMIT ? OFFSET ?
+		`,
+		searchCondition,
+	)
 
 	var res ChairSearchResponse
 
-	chairs := []Chair{}
+	chairs := []ChairWithCount{}
 	params = append(params, perPage, page*perPage)
-	err = db.Select(&chairs, searchQuery+searchCondition+limitOffset, params...)
+	err = db.Select(&chairs, query, params...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusOK, ChairSearchResponse{Count: 0, Chairs: []Chair{}})
@@ -546,8 +566,10 @@ func searchChairs(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	res.Chairs = chairs
-	res.Count = int64(len(chairs))
+	for _, chair := range chairs {
+		res.Chairs = append(res.Chairs, chair.Chair)
+	}
+	res.Count = chairs[0].ChairCount
 
 	return c.JSON(http.StatusOK, res)
 }
@@ -797,15 +819,35 @@ func searchEstates(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	searchQuery := "SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate2 WHERE "
 	searchCondition := strings.Join(conditions, " AND ")
-	limitOffset := " ORDER BY popularity DESC, id ASC LIMIT ? OFFSET ?"
+
+	type EstateWithCount struct {
+		Estate
+		EstateCount int64 `db:"estate_count"`
+	}
+
+	query := fmt.Sprintf(
+		`
+			SELECT
+				*
+			FROM (
+				SELECT
+					id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, COUNT(*) AS estate_count
+				FROM estate2
+				WHERE
+					%s
+				ORDER BY popularity DESC, id ASC
+			) AS S
+			LIMIT ? OFFSET ?
+		`,
+		searchCondition,
+	)
 
 	var res EstateSearchResponse
 
-	estates := []Estate{}
+	estates := []EstateWithCount{}
 	params = append(params, perPage, page*perPage)
-	err = db.Select(&estates, searchQuery+searchCondition+limitOffset, params...)
+	err = db.Select(&estates, query, params...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusOK, EstateSearchResponse{Count: 0, Estates: []Estate{}})
@@ -814,8 +856,10 @@ func searchEstates(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	res.Estates = estates
-	res.Count = int64(len(estates))
+	for _, estate := range estates {
+		res.Estates = append(res.Estates, estate.Estate)
+	}
+	res.Count = estates[0].EstateCount
 
 	return c.JSON(http.StatusOK, res)
 }
