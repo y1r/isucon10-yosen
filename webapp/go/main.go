@@ -556,15 +556,8 @@ func searchChairs(c echo.Context) error {
 			(
 				SELECT
 					chair.*,
-					S.chair_count
+					1 AS chair_count
 				FROM chair
-				INNER JOIN (
-					SELECT
-						COUNT(*) AS chair_count
-					FROM chair
-					WHERE
-						%s
-				) AS S
 				WHERE
 					%s
 				ORDER BY popularity DESC, id ASC
@@ -573,13 +566,11 @@ func searchChairs(c echo.Context) error {
 		`,
 		searchCondition,
 		searchCondition,
-		searchCondition,
 	)
 
 	var res ChairSearchResponse
 
 	chairs := []ChairWithCount{}
-	params = append(params, params...)
 	params = append(params, params...)
 	params = append(params, perPage, page*perPage)
 	err = db.Select(&chairs, query, params...)
@@ -870,15 +861,8 @@ func searchEstates(c echo.Context) error {
 			UNION
 			(
 				SELECT
-					id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, S.estate_count
+					id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, 1 AS estate_count
 				FROM estate2
-				INNER JOIN (
-					SELECT
-						COUNT(*) AS estate_count
-					FROM estate2
-					WHERE
-						%s
-				) AS S
 				WHERE
 					%s
 				ORDER BY popularity DESC, id ASC
@@ -887,13 +871,11 @@ func searchEstates(c echo.Context) error {
 		`,
 		searchCondition,
 		searchCondition,
-		searchCondition,
 	)
 
 	var res EstateSearchResponse
 
 	estates := []EstateWithCount{}
-	params = append(params, params...)
 	params = append(params, params...)
 	params = append(params, perPage, page*perPage)
 	err = db.Select(&estates, query, params...)
