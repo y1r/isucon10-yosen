@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -312,30 +313,44 @@ func main() {
 
 func initialize(c echo.Context) error {
 	sqlDir := filepath.Join("..", "mysql", "db")
-	paths := []string{
+	pathsChair := []string{
 		filepath.Join(sqlDir, "0_Schema.sql"),
 		filepath.Join(sqlDir, "1_DummyEstateData.sql"),
 		filepath.Join(sqlDir, "2_DummyChairData.sql"),
 		filepath.Join(sqlDir, "3_CreateEstate2.sql"),
 	}
 
-	for _, p := range paths {
-		sqlFile, _ := filepath.Abs(p)
-		cmdStr := fmt.Sprintf("mysql -h %v -u %v -p%v -P %v %v < %v",
-			chairConnectionData.Host,
-			chairConnectionData.User,
-			chairConnectionData.Password,
-			chairConnectionData.Port,
-			chairConnectionData.DBName,
-			sqlFile,
-		)
-		if err := exec.Command("bash", "-c", cmdStr).Run(); err != nil {
-			c.Logger().Errorf("Initialize script error : %v", err)
-			return c.NoContent(http.StatusInternalServerError)
-		}
+	pathsEstate := []string{
+		filepath.Join(sqlDir, "0_Schema.sql"),
+		filepath.Join(sqlDir, "1_DummyEstateData.sql"),
+		filepath.Join(sqlDir, "2_DummyChairData.sql"),
+		filepath.Join(sqlDir, "3_CreateEstate2.sql"),
 	}
 
-	for _, p := range paths {
+	wg := &sync.WaitGroup{}
+
+	wg.Add(1)
+	var dbChairError error
+	go func() {
+		defer wg.Done()
+		for _, p := range pathsChair {
+			sqlFile, _ := filepath.Abs(p)
+			cmdStr := fmt.Sprintf("mysql -h %v -u %v -p%v -P %v %v < %v",
+				chairConnectionData.Host,
+				chairConnectionData.User,
+				chairConnectionData.Password,
+				chairConnectionData.Port,
+				chairConnectionData.DBName,
+				sqlFile,
+			)
+			dbChairError = exec.Command("bash", "-c", cmdStr).Run()
+			if dbChairError != nil {
+				return
+			}
+		}
+	}()
+
+	for _, p := range pathsEstate {
 		sqlFile, _ := filepath.Abs(p)
 		cmdStr := fmt.Sprintf("mysql -h %v -u %v -p%v -P %v %v < %v",
 			estateConnectionData.Host,
@@ -349,6 +364,13 @@ func initialize(c echo.Context) error {
 			c.Logger().Errorf("Initialize script error : %v", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
+	}
+
+	wg.Wait()
+
+	if dbChairError != nil {
+		c.Logger().Errorf("Initialize script error : %v", dbChairError)
+		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	return c.JSON(http.StatusOK, InitializeResponse{
