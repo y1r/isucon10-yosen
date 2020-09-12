@@ -17,9 +17,7 @@ CREATE TABLE isuumo.estate
     door_height INTEGER             NOT NULL,
     door_width  INTEGER             NOT NULL,
     features    VARCHAR(64)         NOT NULL,
-    popularity  INTEGER             NOT NULL,
-    INDEX idx_nazotte(`latitude`, `longitude`, `popularity`, `id`),
-    INDEX idx_price(`rent`, `id`)
+    popularity  INTEGER             NOT NULL
 );
 
 create table isuumo.estate2
@@ -38,6 +36,8 @@ create table isuumo.estate2
     features    VARCHAR(64)         NOT NULL,
     popularity  INTEGER             NOT NULL,
     INDEX idx_price(`rent`, `id`),
+    INDEX idx_door_height(`door_height`),
+    INDEX idx_door_width(`door_width`),
     SPATIAL INDEX idx_pos(`position`)
 );
 
@@ -56,5 +56,10 @@ CREATE TABLE isuumo.chair
     kind        VARCHAR(64)     NOT NULL,
     popularity  INTEGER         NOT NULL,
     stock       INTEGER         NOT NULL,
-    INDEX idx_price(`price`, `id`)
+    INDEX idx_price(`price`, `id`),
+    INDEX idx_height(`height`),
+    INDEX idx_width(`width`),
+    INDEX idx_depth(`depth`),
+    INDEX idx_color(`color`),
+    INDEX idx_kind(`kind`)
 );
