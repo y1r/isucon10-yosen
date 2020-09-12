@@ -590,8 +590,6 @@ func buyChair(c echo.Context) error {
 		return c.NoContent(http.StatusNotFound)
 	}
 
-
-
 	return c.NoContent(http.StatusOK)
 }
 
@@ -649,6 +647,15 @@ func getRange(cond RangeCondition, rangeID string) (*Range, error) {
 	return cond.Ranges[RangeIndex], nil
 }
 
+func insertEstates(valueStrings []string, valueArgs [](interface{})) error {
+	query := fmt.Sprintf("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES %s", strings.Join(valueStrings, ","))
+	_, err := db.Exec(query, valueArgs...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func postEstate(c echo.Context) error {
 	header, err := c.FormFile("estates")
 	if err != nil {
@@ -667,12 +674,9 @@ func postEstate(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	tx, err := db.Begin()
-	if err != nil {
-		c.Logger().Errorf("failed to begin tx: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	defer tx.Rollback()
+	valueStrings := []string{}
+	valueArgs := [](interface{}){}
+
 	for _, row := range records {
 		rm := RecordMapper{Record: row}
 		id := rm.NextInt()
@@ -685,22 +689,34 @@ func postEstate(c echo.Context) error {
 		rent := rm.NextInt()
 		doorHeight := rm.NextInt()
 		doorWidth := rm.NextInt()
-		features := rm.NextString()
+		features := sortFeatures(rm.NextString())
 		popularity := rm.NextInt()
 		if err := rm.Err(); err != nil {
 			c.Logger().Errorf("failed to read record: %v", err)
 			return c.NoContent(http.StatusBadRequest)
 		}
-		_, err := tx.Exec("INSERT INTO estate(id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", id, name, description, thumbnail, address, latitude, longitude, rent, doorHeight, doorWidth, features, popularity)
-		if err != nil {
-			c.Logger().Errorf("failed to insert estate: %v", err)
-			return c.NoContent(http.StatusInternalServerError)
-		}
+
+		valueStrings = append(valueStrings, "(?,?,?,?,?,?,?,?,?,?,?,?,?)")
+
+		valueArgs = append(valueArgs, id)
+		valueArgs = append(valueArgs, name)
+		valueArgs = append(valueArgs, description)
+		valueArgs = append(valueArgs, thumbnail)
+		valueArgs = append(valueArgs, address)
+		valueArgs = append(valueArgs, latitude)
+		valueArgs = append(valueArgs, longitude)
+		valueArgs = append(valueArgs, rent)
+		valueArgs = append(valueArgs, doorHeight)
+		valueArgs = append(valueArgs, doorWidth)
+		valueArgs = append(valueArgs, features)
+		valueArgs = append(valueArgs, popularity)
 	}
-	if err := tx.Commit(); err != nil {
-		c.Logger().Errorf("failed to commit tx: %v", err)
+
+	if err := insertEstates(valueStrings, valueArgs); err != nil {
+		c.Logger().Errorf("failed to insert estate: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
 	return c.NoContent(http.StatusCreated)
 }
 
