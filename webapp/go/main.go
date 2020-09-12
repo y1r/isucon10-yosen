@@ -315,15 +315,12 @@ func initialize(c echo.Context) error {
 	sqlDir := filepath.Join("..", "mysql", "db")
 	pathsChair := []string{
 		filepath.Join(sqlDir, "0_Schema.sql"),
-		filepath.Join(sqlDir, "1_DummyEstateData.sql"),
 		filepath.Join(sqlDir, "2_DummyChairData.sql"),
-		filepath.Join(sqlDir, "3_CreateEstate2.sql"),
 	}
 
 	pathsEstate := []string{
 		filepath.Join(sqlDir, "0_Schema.sql"),
 		filepath.Join(sqlDir, "1_DummyEstateData.sql"),
-		filepath.Join(sqlDir, "2_DummyChairData.sql"),
 		filepath.Join(sqlDir, "3_CreateEstate2.sql"),
 	}
 
