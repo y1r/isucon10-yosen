@@ -561,7 +561,7 @@ func searchChairs(c echo.Context) error {
 	var res ChairSearchResponse
 
 	chairs := []ChairWithCount{}
-	params = append(params, params)
+	params = append(params, params...)
 	params = append(params, perPage, page*perPage)
 	err = db.Select(&chairs, query, params...)
 	if err != nil {
@@ -856,7 +856,7 @@ func searchEstates(c echo.Context) error {
 	var res EstateSearchResponse
 
 	estates := []EstateWithCount{}
-	params = append(params, params)
+	params = append(params, params...)
 	params = append(params, perPage, page*perPage)
 	err = db.Select(&estates, query, params...)
 	if err != nil {
