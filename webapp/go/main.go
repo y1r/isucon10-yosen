@@ -575,31 +575,33 @@ func searchChairs(c echo.Context) error {
 
 	query := fmt.Sprintf(
 		`
-			(
+			SELECT
+				COALESCE(chair.id, -1) AS id,
+				COALESCE(chair.name, "") AS name,
+				COALESCE(chair.description, "") AS description,
+				COALESCE(chair.thumbnail, "") AS thumbnail,
+				COALESCE(chair.price, 0) AS price,
+				COALESCE(chair.height, 0) AS height,
+				COALESCE(chair.width, 0) AS width,
+				COALESCE(chair.depth, 0) AS depth,
+				COALESCE(chair.color, "") AS color,
+				COALESCE(chair.features, "") AS features,
+				COALESCE(chair.kind, "") AS kind,
+				COALESCE(chair.popularity, 0) AS popularity,
+				COALESCE(chair.stock, 0) AS stock,
+				S.chair_count
+			FROM chair
+			RIGHT JOIN (
 				SELECT
-					chair.*,
-					S.chair_count
-				FROM chair
-				INNER JOIN (
-					SELECT
-						COUNT(*) AS chair_count
-					FROM chair
-					WHERE
-						%s
-				) AS S
-				LIMIT 1
-			)
-			UNION
-			(
-				SELECT
-					chair.*,
-					1 AS chair_count
+					COUNT(*) AS chair_count
 				FROM chair
 				WHERE
 					%s
-				ORDER BY popularity DESC, id ASC
-				LIMIT ? OFFSET ?
-			)
+			) AS S
+			WHERE
+				%s
+			ORDER BY popularity DESC, id ASC
+			LIMIT ? OFFSET ?
 		`,
 		searchCondition,
 		searchCondition,
@@ -621,8 +623,10 @@ func searchChairs(c echo.Context) error {
 
 	res.Count = chairs[0].ChairCount
 
-	for _, chair := range chairs[1:] {
-		res.Chairs = append(res.Chairs, chair.Chair)
+	if chairs[0].ID != -1 {
+		for _, chair := range chairs {
+			res.Chairs = append(res.Chairs, chair.Chair)
+		}
 	}
 
 	return c.JSON(http.StatusOK, res)
@@ -882,29 +886,32 @@ func searchEstates(c echo.Context) error {
 
 	query := fmt.Sprintf(
 		`
-			(
+			SELECT
+				COALESCE(estate2.id, -1) AS id,
+				COALESCE(estate2.name, "") AS name,
+				COALESCE(estate2.description, "") AS description,
+				COALESCE(estate2.thumbnail, "") AS thumbnail,
+				COALESCE(estate2.address, "") AS address,
+				COALESCE(estate2.latitude, 0.0) AS latitude,
+				COALESCE(estate2.longitude, 0.0) AS longitude,
+				COALESCE(estate2.rent, 0) AS rent,
+				COALESCE(estate2.door_height, 0) AS door_height,
+				COALESCE(estate2.door_width, 0) AS door_width,
+				COALESCE(estate2.features, "") AS features,
+				COALESCE(estate2.popularity, 0) AS popularity,
+				S.estate_count
+			FROM estate2
+			RIGHT JOIN (
 				SELECT
-					id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, S.estate_count
-				FROM estate2
-				INNER JOIN (
-					SELECT
-						COUNT(*) AS estate_count
-					FROM estate2
-					WHERE
-						%s
-				) AS S
-				LIMIT 1
-			)
-			UNION
-			(
-				SELECT
-					id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, 1 AS estate_count
+					COUNT(*) AS estate_count
 				FROM estate2
 				WHERE
 					%s
-				ORDER BY popularity DESC, id ASC
-				LIMIT ? OFFSET ?
-			)
+			) AS S
+			WHERE
+				%s
+			ORDER BY popularity DESC, id ASC
+			LIMIT ? OFFSET ?
 		`,
 		searchCondition,
 		searchCondition,
@@ -926,8 +933,10 @@ func searchEstates(c echo.Context) error {
 
 	res.Count = estates[0].EstateCount
 
-	for _, estate := range estates[1:] {
-		res.Estates = append(res.Estates, estate.Estate)
+	if estates[0].ID != -1 {
+		for _, estate := range estates {
+			res.Estates = append(res.Estates, estate.Estate)
+		}
 	}
 
 	return c.JSON(http.StatusOK, res)
