@@ -897,19 +897,18 @@ func searchEstateNazotte(c echo.Context) error {
 	estatesInPolygon := []Estate{}
 	err = db.Select(
 		&estatesInPolygon,
-		`
+		fmt.Sprintf(`
 			SELECT
 				id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity
 			FROM estate2
 			WHERE
 				ST_Contains(
-					ST_PolygonFromText(?),
-					point
+					ST_PolygonFromText(%s),
+					position
 				)
 			ORDER BY popularity DESC, id ASC
 			LIMIT ?
-		`,
-		coordinates.coordinatesToText(),
+		`, coordinates.coordinatesToText()),
 		NazotteLimit,
 	)
 	if err == sql.ErrNoRows {
