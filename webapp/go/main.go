@@ -843,10 +843,10 @@ func searchEstates(c echo.Context) error {
 				FROM estate2
 				WHERE
 					%s
-				ORDER BY popularity DESC, id ASC
 			) AS S
 			WHERE
 				%s
+			ORDER BY popularity DESC, id ASC
 			LIMIT ? OFFSET ?
 		`,
 		searchCondition,
