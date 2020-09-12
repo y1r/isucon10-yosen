@@ -251,11 +251,6 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	// Set cron job
-	if _, err := scheduler.Every(10).Seconds().Run(updateLowPricedChair); err != nil {
-		e.Logger.Fatalf("Job failed : %v", err)
-	}
-
 	// Initialize
 	e.POST("/initialize", initialize)
 
@@ -612,7 +607,18 @@ func updateLowPricedChair() {
 	lowPriceChairsError = db.Select(&lowPriceChairs, query, Limit)
 }
 
+var lowPriceStarted = false
+
 func getLowPricedChair(c echo.Context) error {
+	// Set cron job
+	if !lowPriceStarted {
+		if _, err := scheduler.Every(1).Seconds().Run(updateLowPricedChair); err != nil {
+			log.Fatalf("updateLowPriced: fail")
+			//e.Logger.Fatalf("Job failed : %v", err)
+		}
+		lowPriceStarted = true
+	}
+
 	if len(lowPriceChairs) == 0 && lowPriceChairsError == nil {
 		c.Logger().Error("getLowPricedChair not found")
 		return c.JSON(http.StatusOK, ChairListResponse{[]Chair{}})
