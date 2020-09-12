@@ -239,6 +239,8 @@ func init() {
 }
 
 func main() {
+	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 1000
+
 	// Echo instance
 	e := echo.New()
 	e.Debug = true
