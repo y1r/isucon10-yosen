@@ -868,7 +868,7 @@ func searchEstateNazotte(c echo.Context) error {
 	estatesInPolygon := []Estate{}
 	err = db.Select(
 		&estatesInPolygon,
-		`
+		fmt.Sprintf(`
 			SELECT
 				*
 			FROM estate
@@ -878,17 +878,16 @@ func searchEstateNazotte(c echo.Context) error {
 				longitude <= ? AND
 				longitude >= ? AND
 				ST_Contains(
-					ST_PolygonFromText(?),
+					ST_PolygonFromText(%s),
 					ST_GeomFromText('POINT(latitude longitude)')
 				)
 			ORDER BY popularity DESC, id ASC
 			LIMIT ?
-		`,
+		`, coordinates.coordinatesToText()),
 		b.BottomRightCorner.Latitude,
 		b.TopLeftCorner.Latitude,
 		b.BottomRightCorner.Longitude,
 		b.TopLeftCorner.Longitude,
-		coordinates.coordinatesToText(),
 		NazotteLimit,
 	)
 	if err == sql.ErrNoRows {
