@@ -539,23 +539,29 @@ func searchChairs(c echo.Context) error {
 	query := fmt.Sprintf(
 		`
 			SELECT
-				*
-			FROM (
+				chair.*,
+				S.chair_count
+			FROM chair
+			INNER JOIN (
 				SELECT
-					*, COUNT(*) AS chair_count
+					COUNT(*) AS chair_count
 				FROM chair
 				WHERE
 					%s
-				ORDER BY popularity DESC, id ASC
 			) AS S
+			WHERE
+				%s
+			ORDER BY popularity DESC, id ASC
 			LIMIT ? OFFSET ?
 		`,
+		searchCondition,
 		searchCondition,
 	)
 
 	var res ChairSearchResponse
 
 	chairs := []ChairWithCount{}
+	params = append(params, params)
 	params = append(params, perPage, page*perPage)
 	err = db.Select(&chairs, query, params...)
 	if err != nil {
@@ -829,23 +835,28 @@ func searchEstates(c echo.Context) error {
 	query := fmt.Sprintf(
 		`
 			SELECT
-				*
-			FROM (
+				id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, S.estate_count
+			FROM estate2
+			INNER JOIN (
 				SELECT
-					id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity, COUNT(*) AS estate_count
+					COUNT(*) AS estate_count
 				FROM estate2
 				WHERE
 					%s
 				ORDER BY popularity DESC, id ASC
 			) AS S
+			WHERE
+				%s
 			LIMIT ? OFFSET ?
 		`,
+		searchCondition,
 		searchCondition,
 	)
 
 	var res EstateSearchResponse
 
 	estates := []EstateWithCount{}
+	params = append(params, params)
 	params = append(params, perPage, page*perPage)
 	err = db.Select(&estates, query, params...)
 	if err != nil {
