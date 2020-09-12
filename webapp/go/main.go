@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/carlescere/scheduler"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo"
@@ -249,6 +250,11 @@ func main() {
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+
+	// Set cron job
+	if _, err := scheduler.Every(10).Seconds().Run(updateLowPricedChair); err != nil {
+		e.Logger.Fatalf("Job failed : %v", err)
+	}
 
 	// Initialize
 	e.POST("/initialize", initialize)
@@ -566,8 +572,6 @@ func buyChair(c echo.Context) error {
 		return c.NoContent(http.StatusNotFound)
 	}
 
-
-
 	return c.NoContent(http.StatusOK)
 }
 
@@ -575,20 +579,30 @@ func getChairSearchCondition(c echo.Context) error {
 	return c.JSON(http.StatusOK, chairSearchCondition)
 }
 
-func getLowPricedChair(c echo.Context) error {
-	var chairs []Chair
+var lowPriceChairs []Chair
+var lowPriceChairsError error
+
+func updateLowPricedChair() {
 	query := `SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT ?`
-	err := db.Select(&chairs, query, Limit)
-	if err != nil {
-		if err == sql.ErrNoRows {
+	lowPriceChairsError = db.Select(&lowPriceChairs, query, Limit)
+}
+
+func getLowPricedChair(c echo.Context) error {
+	if len(lowPriceChairs) == 0 && lowPriceChairsError == nil {
+		c.Logger().Error("getLowPricedChair not found")
+		return c.JSON(http.StatusOK, ChairListResponse{[]Chair{}})
+	}
+
+	if lowPriceChairsError != nil {
+		if lowPriceChairsError == sql.ErrNoRows {
 			c.Logger().Error("getLowPricedChair not found")
 			return c.JSON(http.StatusOK, ChairListResponse{[]Chair{}})
 		}
-		c.Logger().Errorf("getLowPricedChair DB execution error : %v", err)
+		c.Logger().Errorf("getLowPricedChair DB execution error : %v", lowPriceChairsError)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	return c.JSON(http.StatusOK, ChairListResponse{Chairs: chairs})
+	return c.JSON(http.StatusOK, ChairListResponse{Chairs: lowPriceChairs})
 }
 
 func getEstateDetail(c echo.Context) error {
