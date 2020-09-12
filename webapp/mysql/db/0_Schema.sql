@@ -24,6 +24,25 @@ CREATE TABLE isuumo.estate
     INDEX idx_door_width(`door_width`)
 );
 
+create table isuumo.estate2
+(
+    id          INTEGER             NOT NULL PRIMARY KEY,
+    name        VARCHAR(64)         NOT NULL,
+    description VARCHAR(4096)       NOT NULL,
+    thumbnail   VARCHAR(128)        NOT NULL,
+    address     VARCHAR(128)        NOT NULL,
+    latitude    DOUBLE PRECISION    NOT NULL,
+    longitude   DOUBLE PRECISION    NOT NULL,
+    position    POINT               NOT NULL,
+    rent        INTEGER             NOT NULL,
+    door_height INTEGER             NOT NULL,
+    door_width  INTEGER             NOT NULL,
+    features    VARCHAR(64)         NOT NULL,
+    popularity  INTEGER             NOT NULL,
+    INDEX idx_price(`rent`, `id`),
+    SPATIAL INDEX idx_pos(`position`)
+);
+
 CREATE TABLE isuumo.chair
 (
     id          INTEGER         NOT NULL PRIMARY KEY,
