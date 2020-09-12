@@ -879,7 +879,7 @@ func searchEstateNazotte(c echo.Context) error {
 				longitude >= ? AND
 				ST_Contains(
 					ST_PolygonFromText(%s),
-					ST_GeomFromText(POINT(latitude longitude))
+					POINT(latitude, longitude)
 				)
 			ORDER BY popularity DESC, id ASC
 			LIMIT ?
